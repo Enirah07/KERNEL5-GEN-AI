@@ -1,35 +1,28 @@
 import streamlit as st
 import pandas as pd
-import google.generativeai as genai
-
-# Use secret API key
-API_KEY = st.secrets["API_KEY"]
-genai.configure(api_key=API_KEY)
-
-model = genai.GenerativeModel("gemini-2.0-flash")
 
 # Load dataset
 df = pd.read_csv("chatbot_dataset.csv", encoding="latin1")
 
-# Build context (limited to first 30 rows)
+# Build context
 context_text = ""
 for _, row in df.head(30).iterrows():
-    context_text += f"Q:{row['question']}\nA:{row['answer']}\n"
+    context_text += f"Q: {row['question']}\nA: {row['answer']}\n"
 
-def ask_gemini(question):
-    prompt = f"{context_text}\nUser question: {question}\nAnswer:"
-    response = model.generate_content(prompt)
-    return response.text
-
-# Streamlit UI
 st.title("KGISL Admission Chatbot")
 
-user_input = st.text_input("Ask something about admission:")
+st.write("This chatbot is currently running in **demo mode** — it won’t crash.")
+
+user_input = st.text_input("Ask something about admissions:")
 
 if st.button("Ask"):
-    if user_input.strip():
-        try:
-            answer = ask_gemini(user_input)
-            st.write("### Chatbot:", answer)
-        except Exception as e:
-            st.error("Error processing request. Please try again.")
+    if user_input:
+        # show dummy context answer
+        st.write("### Answer:")
+        for _, row in df.iterrows():
+            if user_input.lower() in row['question'].lower():
+                st.write(f"**Q:** {row['question']}")
+                st.write(f"**A:** {row['answer']}")
+                break
+        else:
+            st.write("Sorry, I don’t know the answer yet.")
