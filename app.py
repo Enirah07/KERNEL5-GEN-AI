@@ -1,28 +1,45 @@
 import streamlit as st
 import pandas as pd
+import google.generativeai as genai
+
+# Load secrets
+API_KEY = st.secrets["API_KEY"]
+
+# Configure Gemini
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 # Load dataset
-df = pd.read_csv("chatbot_dataset.csv", encoding="latin1")
+df = pd.read_csv("kgisl_chatbot_dataset.csv")  # your file name
 
-# Build context
+# Build context (NO Q: A:)
 context_text = ""
-for _, row in df.head(30).iterrows():
-    context_text += f"Q: {row['question']}\nA: {row['answer']}\n"
+for _, row in df.iterrows():
+    context_text += f"{row['question']} -> {row['answer']}\n"
 
+# Function to ask Gemini
+def ask_gemini(user_query):
+    prompt = f"""
+You are an admission helpdesk assistant for KGiSL College.
+Use ONLY the following knowledge to answer:
+
+{context_text}
+
+User question: {user_query}
+
+Answer clearly and directly. Do NOT include 'Q:' or 'A:' in your answer.
+Do NOT say you don't know unless nothing is related.
+"""
+    response = model.generate_content(prompt)
+    return response.text
+
+# Streamlit UI
 st.title("KGISL Admission Chatbot")
-
-st.write("This chatbot is currently running in **demo mode** — it won’t crash.")
+st.write("This chatbot is currently running and answering real queries.")
 
 user_input = st.text_input("Ask something about admissions:")
 
-if st.button("Ask"):
-    if user_input:
-        # show dummy context answer
-        st.write("### Answer:")
-        for _, row in df.iterrows():
-            if user_input.lower() in row['question'].lower():
-                st.write(f"**Q:** {row['question']}")
-                st.write(f"**A:** {row['answer']}")
-                break
-        else:
-            st.write("Sorry, I don’t know the answer yet.")
+if user_input:
+    answer = ask_gemini(user_input)
+    st.write("### Answer:")
+    st.write(answer)
